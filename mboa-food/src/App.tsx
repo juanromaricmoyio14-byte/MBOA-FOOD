@@ -26,17 +26,24 @@ function App() {
   }, []);
 
   if (loading) {
-    return <div className="min-h-screen bg-mboa-green flex items-center justify-center text-mboa-gold">Chargement...</div>;
+    return (
+      <div className="min-h-screen flex items-center justify-center text-mboa-gold">
+        <div className="text-center">
+          <span className="text-4xl block mb-4 animate-pulse">🍲</span>
+          <p className="font-playfair italic text-xl">Préparation en cours...</p>
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div className="min-h-screen bg-mboa-green flex flex-col font-inter">
+    <div className="min-h-screen flex flex-col relative overflow-x-hidden">
       {!profile ? (
         <ProfileSetup onComplete={setProfile} />
       ) : (
         <>
           <Header firstName={profile.firstName} />
-          <main className="flex-1 flex flex-col">
+          <main className="flex-1 flex flex-col w-full relative z-0">
             <ChatAssistant userProfile={profile} />
           </main>
         </>

@@ -4,7 +4,7 @@ interface HeaderProps {
   firstName: string;
 }
 
-export const Header: React.FC<HeaderProps> = ({ firstName }) => {
+export const Header = ({ firstName }: HeaderProps) => {
   const [isOnline, setIsOnline] = useState(navigator.onLine);
 
   useEffect(() => {
@@ -28,21 +28,33 @@ export const Header: React.FC<HeaderProps> = ({ firstName }) => {
   const formattedDate = `${monthNames[currentDate.getMonth()]} ${currentDate.getFullYear()}`;
 
   return (
-    <header className="py-4 px-6 bg-mboa-green border-b border-white/10 flex justify-between items-center sticky top-0 z-10">
-      <div>
-        <h1 className="text-2xl font-bold text-mboa-gold m-0">Mboa Food</h1>
-        <p className="text-sm opacity-80 capitalize">{formattedDate}</p>
-      </div>
+    <header className="w-full bg-gradient-to-b from-mboa-green to-mboa-green-light py-8 px-6 sm:px-8 shadow-soft relative z-10 rounded-b-3xl">
+      <div className="max-w-4xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
 
-      <div className="flex items-center space-x-4">
-        <div className="flex items-center space-x-2">
-          <span className="text-sm hidden sm:inline-block">Bonjour, <span className="font-semibold">{firstName}</span></span>
+        <div className="text-center md:text-left flex flex-col items-center md:items-start">
+          <h1 className="text-[2.5rem] font-playfair font-bold italic text-mboa-gold m-0 leading-none mb-2 drop-shadow-md">
+            Mboa Food
+          </h1>
+          <p className="text-sm italic text-white/90 font-lato tracking-wide">
+            Votre assistant culinaire camerounais
+          </p>
         </div>
 
-        <div className="flex items-center space-x-1 bg-white/10 px-2 py-1 rounded-full text-xs">
-          <div className={`w-2 h-2 rounded-full ${isOnline ? 'bg-green-400' : 'bg-red-400'}`}></div>
-          <span>{isOnline ? 'En ligne' : 'Hors ligne'}</span>
+        <div className="flex flex-wrap justify-center items-center gap-3">
+          <div className="bg-white/10 backdrop-blur-md border border-white/20 px-4 py-2 rounded-full flex items-center space-x-2 text-sm font-medium shadow-sm transition-all hover:bg-white/15">
+            <span className="capitalize">{formattedDate}</span>
+          </div>
+
+          <div className="bg-white/10 backdrop-blur-md border border-white/20 px-4 py-2 rounded-full flex items-center space-x-2 text-sm font-medium shadow-sm transition-all hover:bg-white/15">
+            <span>Bonjour, <span className="font-bold text-mboa-rose">{firstName}</span></span>
+          </div>
+
+          <div className="bg-white/10 backdrop-blur-md border border-white/20 px-3 py-2 rounded-full flex items-center space-x-2 text-xs font-medium shadow-sm" title={isOnline ? "Connecté" : "Mode Hors Ligne"}>
+            <div className={`w-2.5 h-2.5 rounded-full shadow-inner ${isOnline ? 'bg-green-400' : 'bg-red-400'}`}></div>
+            <span className="hidden sm:inline-block">{isOnline ? 'En ligne' : 'Hors ligne'}</span>
+          </div>
         </div>
+
       </div>
     </header>
   );

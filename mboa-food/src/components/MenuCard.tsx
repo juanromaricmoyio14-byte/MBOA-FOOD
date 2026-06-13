@@ -1,4 +1,3 @@
-
 import type { Plat } from '../data/mboaData';
 
 interface MenuCardProps {
@@ -6,31 +5,42 @@ interface MenuCardProps {
   isSeasonal: boolean;
 }
 
-export const MenuCard: React.FC<MenuCardProps> = ({ plat, isSeasonal }) => {
+export const MenuCard = ({ plat, isSeasonal }: MenuCardProps) => {
+  const isBreakfast = plat.type === 'PETIT_DEJEUNER';
+  const stripColor = isBreakfast ? 'bg-mboa-rose' : 'bg-mboa-soft-green';
+  const emoji = isBreakfast ? '☕' : '🍲';
+
   return (
-    <div className="bg-mboa-cream rounded-xl p-5 shadow-lg border-l-4 border-mboa-gold text-mboa-green flex flex-col h-full">
-      <div className="flex justify-between items-start mb-2">
-        <h3 className="text-lg font-bold font-poppins">{plat.nom}</h3>
-        {isSeasonal && (
-          <span className="bg-mboa-green text-mboa-gold text-xs font-bold px-2 py-1 rounded-full uppercase tracking-wider">
-            De Saison
-          </span>
-        )}
-      </div>
+    <div className="bg-mboa-cream rounded-2xl shadow-soft hover:shadow-float hover:-translate-y-1 transition-all duration-300 overflow-hidden flex flex-col h-full border border-black/5">
+      {/* Top colored strip */}
+      <div className={`h-2 w-full ${stripColor}`}></div>
 
-      <p className="text-sm opacity-90 mb-4 flex-grow">{plat.description}</p>
-
-      <div className="flex justify-between items-center mt-auto pt-4 border-t border-mboa-green/20">
-        <div className="flex items-center space-x-1">
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 opacity-70" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-          <span className="text-sm font-semibold">{plat.temps_preparation} min</span>
+      <div className="p-6 flex flex-col flex-grow">
+        <div className="flex justify-between items-start mb-3 gap-2">
+          <h3 className="text-xl font-bold font-playfair text-mboa-green leading-tight">
+            <span className="mr-2">{emoji}</span>{plat.nom}
+          </h3>
+          {isSeasonal && (
+            <span className="bg-mboa-gold/10 text-mboa-gold border border-mboa-gold/20 text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-widest whitespace-nowrap">
+              Saison ✨
+            </span>
+          )}
         </div>
 
-        <div className="text-right">
-          <span className="block text-xs opacity-70">Est. Coût</span>
-          <span className="font-bold text-mboa-gold text-lg">{plat.prix_fcfa} FCFA</span>
+        <p className="text-sm text-mboa-dark-text/70 italic mb-5 flex-grow font-light leading-relaxed">
+          {plat.description}
+        </p>
+
+        <div className="flex justify-between items-center mt-auto pt-4 border-t border-black/5">
+          <div className="flex items-center text-mboa-dark-text/80 bg-black/5 px-3 py-1.5 rounded-full">
+            <span className="mr-1.5 text-lg">⏱️</span>
+            <span className="text-sm font-semibold">{plat.temps_preparation} min</span>
+          </div>
+
+          <div className="text-right flex items-center bg-mboa-gold/10 px-3 py-1.5 rounded-full">
+            <span className="font-bold text-mboa-gold text-lg mr-1.5">{plat.prix_fcfa}</span>
+            <span className="text-xs font-bold text-mboa-gold/70">FCFA</span>
+          </div>
         </div>
       </div>
     </div>
