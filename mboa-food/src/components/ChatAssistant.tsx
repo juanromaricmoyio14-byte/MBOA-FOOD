@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Catalogue_Plats, Aliments_Saisonniers, type Plat } from '../data/mboaData';
 import { MenuCard } from './MenuCard';
+import { getMenuRecommendation } from '../services/geminiService';
 
 interface ChatAssistantProps {
   userProfile: {
@@ -12,6 +13,7 @@ interface ChatAssistantProps {
 
 export const ChatAssistant = ({ userProfile }: ChatAssistantProps) => {
   const [input, setInput] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   const [recommendation, setRecommendation] = useState<{
     petitDej: Plat | null;
     platPrincipal: Plat | null;
@@ -19,7 +21,16 @@ export const ChatAssistant = ({ userProfile }: ChatAssistantProps) => {
 
   const currentMonth = new Date().getMonth() + 1; // 1-12
 
-  const parseInput = (text: string) => {
+  const isDishSeasonal = (dish: Plat) => {
+    if (dish.ingredients_saisonniers.length === 0) return false;
+
+    return dish.ingredients_saisonniers.some(ingName => {
+      const ingredient = Aliments_Saisonniers.find(a => a.nom === ingName);
+      return ingredient ? ingredient.mois.includes(currentMonth) : false;
+    });
+  };
+
+  const parseInputFallback = (text: string) => {
     let budget = null;
     let people = userProfile.peopleCount;
     let timeConstraint = null;
@@ -36,19 +47,8 @@ export const ChatAssistant = ({ userProfile }: ChatAssistantProps) => {
     return { budget, people, timeConstraint };
   };
 
-  const isDishSeasonal = (dish: Plat) => {
-    if (dish.ingredients_saisonniers.length === 0) return false;
-
-    return dish.ingredients_saisonniers.some(ingName => {
-      const ingredient = Aliments_Saisonniers.find(a => a.nom === ingName);
-      return ingredient ? ingredient.mois.includes(currentMonth) : false;
-    });
-  };
-
-  const handleSend = () => {
-    if (!input.trim()) return;
-
-    const { budget, people, timeConstraint } = parseInput(input);
+  const handleLocalFallback = (text: string) => {
+    const { budget, people, timeConstraint } = parseInputFallback(text);
 
     let availablePetitDej = Catalogue_Plats.filter(p => p.type === 'PETIT_DEJEUNER');
     let availablePlats = Catalogue_Plats.filter(p => p.type === 'PLAT_PRINCIPAL');
@@ -87,13 +87,55 @@ export const ChatAssistant = ({ userProfile }: ChatAssistantProps) => {
       : Catalogue_Plats.filter(p => p.type === 'PLAT_PRINCIPAL').sort((a,b) => a.prix_fcfa - b.prix_fcfa)[0];
 
     setRecommendation({ petitDej: selectedPetitDej, platPrincipal: selectedPlat });
+  };
+
+  const handleSend = async () => {
+    if (!input.trim() || isLoading) return;
+
+    setIsLoading(true);
+    const userMessage = input;
     setInput('');
+
+    try {
+      // 1. Tenter l'appel Gemini
+      const geminiResult = await getMenuRecommendation(
+        userMessage,
+        userProfile,
+        Catalogue_Plats,
+        currentMonth
+      );
+
+      if (geminiResult && geminiResult.breakfast && geminiResult.mainDish) {
+        const foundBreakfast = Catalogue_Plats.find(p => p.id === geminiResult.breakfast && p.type === 'PETIT_DEJEUNER');
+        const foundMain = Catalogue_Plats.find(p => p.id === geminiResult.mainDish && p.type === 'PLAT_PRINCIPAL');
+
+        if (foundBreakfast && foundMain) {
+          setRecommendation({ petitDej: foundBreakfast, platPrincipal: foundMain });
+          setIsLoading(false);
+          return;
+        }
+      }
+
+      // 2. Si échec API ou Ids non trouvés, utiliser le fallback
+      handleLocalFallback(userMessage);
+
+    } catch (e) {
+      // En cas d'erreur réseau, fallback
+      handleLocalFallback(userMessage);
+    }
+
+    setIsLoading(false);
   };
 
   return (
     <div className="flex-1 flex flex-col p-4 sm:p-6 max-w-4xl mx-auto w-full relative pb-28">
 
-      {!recommendation ? (
+      {isLoading ? (
+        <div className="flex-1 flex flex-col items-center justify-center text-center">
+          <div className="w-16 h-16 border-4 border-mboa-gold border-t-transparent rounded-full animate-spin mb-4"></div>
+          <p className="font-playfair italic text-xl text-mboa-gold animate-pulse">L'IA réfléchit à votre menu...</p>
+        </div>
+      ) : !recommendation ? (
         <div className="flex-1 flex flex-col items-center justify-center text-center opacity-80 mt-10">
           <span className="text-6xl mb-6">🍽️</span>
           <h2 className="text-2xl font-playfair italic mb-2">Prêt à cuisiner ?</h2>
@@ -143,12 +185,14 @@ export const ChatAssistant = ({ userProfile }: ChatAssistantProps) => {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+            disabled={isLoading}
             placeholder="Ex : J ai 2000 FCFA pour 3 personnes ce soir..."
-            className="flex-1 bg-transparent border-none px-6 py-3 text-mboa-dark-text placeholder-mboa-dark-text/40 italic focus:outline-none font-medium text-base sm:text-lg"
+            className="flex-1 bg-transparent border-none px-6 py-3 text-mboa-dark-text placeholder-mboa-dark-text/40 italic focus:outline-none font-medium text-base sm:text-lg disabled:opacity-50"
           />
           <button
             onClick={handleSend}
-            className="bg-mboa-gold text-white rounded-full w-12 h-12 flex items-center justify-center hover:bg-yellow-500 hover:scale-105 transition-all shadow-md ml-2 flex-shrink-0"
+            disabled={isLoading}
+            className="bg-mboa-gold text-white rounded-full w-12 h-12 flex items-center justify-center hover:bg-yellow-500 hover:scale-105 transition-all shadow-md ml-2 flex-shrink-0 disabled:opacity-50 disabled:hover:scale-100"
             aria-label="Envoyer"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 transform rotate-90" fill="none" viewBox="0 0 24 24" stroke="currentColor">
